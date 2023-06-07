@@ -1,0 +1,319 @@
+---
+title: "Relatório Tese - Capítulo 4"
+author: "Denilson Junio Marques Soares"
+date: "2023-06-06"
+output: html_document
+---
+
+---
+# Análises da Tese - Capítulo 4
+
+##### Carregamento de Pacotes
+
+```{r pacotes, message=FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(corrplot)
+library(Benchmarking)
+library(deaR)
+library(writexl)
+library(raster)
+library(rgdal)
+library(tidyverse)
+library(ggplot2)
+```
+#
+#
+#
+##### Carregamento do banco de dados
+
+```{r, message=FALSE, warning=FALSE, results=FALSE}
+dados<- read_excel("C:\\Users\\UFES\\Desktop\\Tese_DenilsonSoares\\Capítulo 4\\dados_Cap4.xlsx")
+```
+
+
+&nbsp;
+
+
+
+### Transformando Ideb, Meta e IRD em números 
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE, results=FALSE}
+dados$Ideb_2017=as.numeric(dados$Ideb_2017)
+dados$Meta_2017=as.numeric(dados$Meta_2017)
+dados$IRD=as.numeric(dados$IRD)
+```
+
+
+&nbsp;
+
+
+###  Invertendo TDI e IED
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE, results=FALSE}
+dados$IED=100-dados$IED
+dados$TDI=100-dados$TDI
+```
+
+
+&nbsp;
+
+
+###  Análises Descritivas - Correlação - 2019
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE}
+
+dados_2019a=dados[, c(3, 7:11)]
+dados_2019=na.omit(dados_2019a)
+summary(dados_2019a)
+```
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE, results=FALSE, fig.width = 12, fig.height = 8}
+M = cor(dados_2019[,2:6])
+testRes = cor.mtest(dados_2019[,2:6], conf.level = 0.95)
+corrplot(M, p.mat = testRes$p, method = 'circle', type = 'lower', insig='blank',
+         addCoef.col ='black', number.cex = 0.8, order = 'AOE', diag=FALSE)
+```
+
+
+&nbsp;
+
+
+###  Análises Descritivas - Correlação - 2017
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE}
+dados_2017a=dados[, c(3, 6:11)]
+dados_2017b=dados_2017a[, -3]
+dados_2017=na.omit(dados_2017b)
+summary(dados_2017)
+```
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE, results=FALSE, fig.width = 12, fig.height = 8}
+N = cor(dados_2017[,2:6])
+testRes2 = cor.mtest(dados_2017[,2:6], conf.level = 0.95)
+corrplot(N, p.mat = testRes2$p, method = 'circle', type = 'lower', insig='blank',
+         addCoef.col ='black', number.cex = 0.8, order = 'AOE', diag=FALSE)
+```
+
+
+
+&nbsp;
+
+
+###  Análises DEA - 2019
+
+
+
+```{r, message=FALSE, warning=FALSE}
+y_2019= read_data(datadea = dados_2019,
+                  ni = 4,
+                  no = 1,
+                  dmus = 1,
+                  inputs = 3:6,
+                  outputs = 2,
+                  nc_inputs = NULL,
+                  nc_outputs = NULL,
+                  nd_inputs = NULL,
+                  nd_outputs = NULL,
+                  ud_inputs = NULL,
+                  ud_outputs = NULL)
+
+
+result_2019<- model_basic(y_2019,
+                          dmu_eval = NULL,
+                          dmu_ref = NULL,
+                          orientation = "oo",
+                          rts =  "vrs")
+
+eff_2019<-efficiencies(result_2019)
+eficiencia_2019=1/eff_2019
+summary(eficiencia_2019)
+sd(eficiencia_2019)
+```
+
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE, results=FALSE, fig.width = 12, fig.height = 8}
+plot(result_2019)
+```
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE, results=FALSE, fig.width = 12, fig.height = 8}
+dadosw=data.frame(cbind(eff_2019, eficiencia_2019))
+
+ggplot(data = dadosw, aes(x = eficiencia_2019)) +
+  geom_histogram(fill='#0072B2', color ='black', lwd=1)+
+  ylab("Frequência") +
+  xlab("Escores de eficiência") +
+  theme_bw()
+```
+
+
+&nbsp;
+
+
+###  Análises DEA - 2017
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE}
+y_2017= read_data(datadea = dados_2017,
+                  ni = 4,
+                  no = 1,
+                  dmus = 1,
+                  inputs = 3:6,
+                  outputs = 2,
+                  nc_inputs = NULL,
+                  nc_outputs = NULL,
+                  nd_inputs = NULL,
+                  nd_outputs = NULL,
+                  ud_inputs = NULL,
+                  ud_outputs = NULL)
+
+
+result_2017<- model_basic(y_2017,
+                          dmu_eval = NULL,
+                          dmu_ref = NULL,
+                          orientation = "oo",
+                          rts =  "vrs")
+
+
+eff_2017<-efficiencies(result_2017)
+eficiencia_2017=1/eff_2017
+summary(eficiencia_2017)
+sd(eficiencia_2017)
+```
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE, results=FALSE, fig.width = 12, fig.height = 8}
+plot(result_2017)
+```
+
+
+&nbsp;
+
+
+###  Índice de Malmquist
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE}
+dadosx=dados[, c(3, 6:11)]
+dadosx2=na.omit(dadosx)
+
+x0 <- as.matrix(dadosx2[,4:7])
+y0 <- as.matrix(dadosx2[,2])
+x1 <- as.matrix(dadosx2[,4:7])
+y1 <- as.matrix(dadosx2[,3])
+
+m <- malmq(x0,y0,,x1,y1,,RTS="vrs")
+```
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE}
+print(m$mq) #Índice de Malmquist para produtividade
+```
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE}
+summary(m$mq) #Índice de Malmquist para produtividade
+```
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE}
+print(m$tc) # Índice de mudança tecnológica
+```
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE}
+summary(m$tc) #Índice de mudança tecnológica
+```
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE}
+print(m$ec) #Índice de mudança de eficiência
+```
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE}
+summary(m$ec) #Índice de mudança de eficiência
+```
+
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE}
+dadosw2=data.frame(cbind(m$mq, m$tc, m$ec))
+
+ggplot(data = dadosw2, aes(x = X1)) +
+  geom_histogram(fill='#0072B2', color ='black', lwd=1)+
+  ylab("Frequência") +
+  xlab("Índice de Malmquist") +
+  theme_bw()
+```
+
+
+&nbsp;
+
+
+###  Parceiros de excelência
+
+&nbsp;
+
+
+```{r, message=FALSE, warning=FALSE}
+references(result_2019)
+```

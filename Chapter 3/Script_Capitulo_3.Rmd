@@ -1,0 +1,528 @@
+---
+title: "Relatorio Tese - Capítulo 3"
+author: "Denilson Junio Marques Soares"
+date: "2023-03-09"
+output: html_document
+---
+
+# Análises da Tese - Capítulo 3
+
+##### Carregamento de Pacotes
+
+```{r pacotes, message=FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(haven)
+library(psych)
+library(lm.beta)
+library(car)
+library(rstatix)
+library(olsrr)
+library(ggplot2)
+library(GGally)
+library(lmtest)
+library(data.table)
+library(performance)
+library(see)
+library(patchwork)
+```
+&nbsp;
+
+
+### Leitura dos dados
+
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE}
+setwd("C:\\Users\\UFES\\Desktop\\Tese_DenilsonSoares\\Capítulo 3")
+dados <- read_excel("Dados_contexto.xlsx")
+dados$IRD=as.numeric(dados$IRD)
+```
+
+
+&nbsp;
+
+
+### Função para as análises gráficas
+
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE}
+diag_fun <- function(data, mapping, hist=list(), ...){
+  
+  X = eval_data_col(data, mapping$x)
+  mn = mean(X)
+  s = sd(X)
+  
+  ggplot(data, mapping) + 
+    do.call(function(...) geom_histogram(aes(y =..density..), ...), hist) +
+    stat_function(fun = dnorm, args = list(mean = mn, sd = s), ...)
+}
+```
+
+
+&nbsp;
+
+
+### Indicadores de contexto relacionados aos alunos
+
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE}
+alunos=data.frame(dados$Ideb, dados$Inse, dados$TDI, dados$PCB, dados$PCH)
+names(alunos)[1:5] <- c("Ideb", "Inse", "TDI", "PCB", "PCH")
+summary(alunos)
+```
+
+
+&nbsp;
+
+### FIGURA 20
+
+
+&nbsp;
+
+```{r, warning=FALSE, message=FALSE, fig.width = 9, fig.height = 6}
+ggpairs(alunos,  diag = list(continuous = wrap(diag_fun, hist=list(fill="gray", colour="Blue"), 
+                                               colour="Black", lwd=1)),
+        lower = list(continuous = wrap("smooth", color="Blue", se=T)))  +theme_bw()
+```
+
+
+&nbsp;
+
+
+### Indicadores de contexto relacionados aos docentes
+
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE}
+docentes=data.frame(dados$Ideb, dados$DSU, dados$AFD, dados$IED, dados$IRD)
+names(docentes)[1:5] <- c("Ideb", "DSU", "AFD", "IED", "IRD")
+summary(docentes)
+```
+
+
+&nbsp;
+
+
+### FIGURA 21
+
+
+&nbsp;
+
+```{r, warning=FALSE, message=FALSE, fig.width = 9, fig.height = 6}
+ggpairs(docentes,  diag = list(continuous = wrap(diag_fun, hist=list(fill="gray", colour="Blue"), 
+                                               colour="Black", lwd=1)),
+        lower = list(continuous = wrap("smooth", color="Blue", se=T)))  +theme_bw()
+```
+
+
+&nbsp;
+
+
+### Indicadores de contexto relacionados às escolas
+
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE}
+escolas=data.frame(dados$Ideb, dados$ATU, dados$HDU, dados$ICG, dados$TNR, dados$INF)
+names(escolas)[1:6] <- c("Ideb", "ATU", "HDU", "ICG", "TNR", "INF")
+summary(escolas)
+```
+
+
+&nbsp;
+
+### FIGURA 22
+
+
+&nbsp;
+
+```{r, warning=FALSE, message=FALSE, fig.width = 9, fig.height = 6}
+ggpairs(escolas,  diag = list(continuous = wrap(diag_fun, hist=list(fill="gray", colour="Blue"), 
+                                               colour="Black", lwd=1)),
+        lower = list(continuous = wrap("smooth", color="Blue", se=T)))  +theme_bw()
+```
+
+
+&nbsp;
+
+
+### Ajuste do Modelo de Regressão Linear Múltipla
+
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE}
+fit <- lm(data = dados, Ideb ~ Inse + TDI + PCB + IED + IRD + HDU + ICG + TNR)
+step_fit_p <- ols_step_backward_p(model = fit, prem = 0.05, details = TRUE)
+```
+
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE}
+fit <- lm(data = dados, Ideb ~ Inse + TDI + PCB + IED)
+```
+
+
+&nbsp;
+
+
+### Diagnóstico do Modelo
+
+
+
+
+
+
+&nbsp;
+
+#### Análise gráfica:
+
+
+
+&nbsp;
+
+
+### FIGURA 23
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE, fig.width = 9, fig.height = 10}
+check_model(fit)
+```
+
+
+
+&nbsp;
+
+#### Normalidade dos resíduos:
+
+
+
+&nbsp;
+
+```{r, warning=FALSE, message=FALSE}
+
+
+shapiro.test(fit$residuals)
+```
+
+
+
+
+&nbsp;
+
+
+
+#### Independência dos resíduos (Durbin-Watson):
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+durbinWatsonTest(fit)
+```
+
+
+
+&nbsp;
+
+
+
+#### Homocedasticidade (Breusch-Pagan):
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+bptest(fit)
+```
+
+
+
+
+
+&nbsp;
+
+#### Outliers nos resíduos:
+
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+summary(rstandard(fit))
+```
+
+
+
+
+&nbsp;
+
+#### Multicolinearidade
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+vif(fit)
+```
+
+
+
+&nbsp;
+
+
+
+
+### Discretização dos dados
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE}
+dados=data.frame(dados$Ideb, dados$Inse, dados$TDI, dados$PCB, dados$IED)
+names(dados)[1:5] <- c("Ideb", "Inse", "TDI", "PCB", "IED")
+
+RRRR = subset(dados, dados$Inse <= median(dados$Inse)  & dados$IED > median(dados$IED)
+              & dados$PCB <= median(dados$PCB)  & dados$TDI > median(dados$TDI))
+
+RRRB = subset(dados, dados$Inse <= median(dados$Inse)  & dados$IED > median(dados$IED)
+              & dados$PCB <= median(dados$PCB)  & dados$TDI <= median(dados$TDI))
+
+RRBR = subset(dados, dados$Inse <= median(dados$Inse)  & dados$IED > median(dados$IED)
+              & dados$PCB > median(dados$PCB) & dados$TDI > median(dados$TDI))
+
+RRBB = subset(dados, dados$Inse <= median(dados$Inse)  & dados$IED > median(dados$IED)
+              & dados$PCB > median(dados$PCB) & dados$TDI <= median(dados$TDI))
+
+RBRR = subset(dados, dados$Inse <= median(dados$Inse)  & dados$IED <= median(dados$IED)
+              & dados$PCB <= median(dados$PCB)  & dados$TDI > median(dados$TDI))
+
+RBRB = subset(dados, dados$Inse <= median(dados$Inse)  & dados$IED <= median(dados$IED)
+              & dados$PCB <= median(dados$PCB)  & dados$TDI <= median(dados$TDI))
+
+RBBR = subset(dados, dados$Inse <= median(dados$Inse)  & dados$IED <= median(dados$IED)
+              & dados$PCB > median(dados$PCB) & dados$TDI > median(dados$TDI))
+
+RBBB = subset(dados, dados$Inse <= median(dados$Inse)  & dados$IED <= median(dados$IED)
+              & dados$PCB > median(dados$PCB) & dados$TDI <= median(dados$TDI))
+
+BRRR = subset(dados, dados$Inse > median(dados$Inse)  & dados$IED > median(dados$IED)
+              & dados$PCB <= median(dados$PCB)  & dados$TDI > median(dados$TDI))
+
+BRRB = subset(dados, dados$Inse > median(dados$Inse)  & dados$IED > median(dados$IED)
+              & dados$PCB <= median(dados$PCB)  & dados$TDI <= median(dados$TDI))
+
+BRBR = subset(dados, dados$Inse > median(dados$Inse)  & dados$IED > median(dados$IED)
+              & dados$PCB > median(dados$PCB) & dados$TDI > median(dados$TDI))
+
+BRBB = subset(dados, dados$Inse > median(dados$Inse)  & dados$IED > median(dados$IED)
+              & dados$PCB > median(dados$PCB) & dados$TDI <= median(dados$TDI))
+
+BBRR = subset(dados, dados$Inse > median(dados$Inse)  & dados$IED <= median(dados$IED)
+              & dados$PCB <= median(dados$PCB)  & dados$TDI > median(dados$TDI))
+
+BBRB = subset(dados, dados$Inse > median(dados$Inse)  & dados$IED <= median(dados$IED)
+              & dados$PCB <= median(dados$PCB)  & dados$TDI <= median(dados$TDI))
+
+BBBR = subset(dados, dados$Inse > median(dados$Inse)  & dados$IED <= median(dados$IED)
+              & dados$PCB > median(dados$PCB) & dados$TDI > median(dados$TDI))
+
+BBBB = subset(dados, dados$Inse > median(dados$Inse)  & dados$IED <= median(dados$IED)
+              & dados$PCB > median(dados$PCB) & dados$TDI <= median(dados$TDI))
+```
+
+
+
+
+&nbsp;
+
+
+#### 4 indicadores abaixo da mediana (B - baixo) e 0 indicadores acima da mediana (A - alto)
+
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE}
+dados_4B0A = RRRR
+summary(dados_4B0A)
+```
+
+
+
+
+
+&nbsp;
+
+
+#### 3 indicadores abaixo da mediana (B - baixo) e 1 indicadores acima da mediana (A - alto)
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+dados_3B1A = rbind(RRRB, RRBR, RBRR, BRRR)
+summary(dados_3B1A)
+```
+
+
+
+
+&nbsp;
+
+
+#### 2 indicadores abaixo da mediana (B - baixo) e 2 indicadores acima da mediana (A - alto)
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+dados_2B2A = rbind(RRBB, RBRB, RBBR, BRRB, BRBR, BBRR)
+summary(dados_2B2A)
+```
+
+
+
+
+&nbsp;
+
+
+#### 1 indicadores abaixo da mediana (B - baixo) e 3 indicadores acima da mediana (A - alto)
+
+
+&nbsp;
+
+
+
+
+
+```{r, warning=FALSE, message=FALSE}
+dados_1B3A = rbind(RBBB, BRBB, BBRB, BBBR)
+summary(dados_1B3A)
+```
+
+
+
+
+
+&nbsp;
+
+
+#### 0 indicadores abaixo da mediana (B - baixo) e 4 indicadores acima da mediana (A - alto)
+
+
+&nbsp;
+
+
+
+
+
+```{r, warning=FALSE, message=FALSE}
+dados_0B4A = BBBB
+summary(dados_0B4A)
+```
+
+
+
+
+
+&nbsp;
+
+
+### Boxplots para as notas no Ideb, considerando a discretização dos dados
+
+
+&nbsp;
+
+```{r, results = FALSE, warning=FALSE, message=FALSE}
+name=c( rep('0B4A', 28), rep("1B3A",58), rep("2B2A",54),rep("3B1A",49), rep("4B0A",33))
+value=c(dados_0B4A$Ideb, dados_1B3A$Ideb,dados_2B2A$Ideb, dados_3B1A$Ideb,  dados_4B0A$Ideb)
+data=data.frame(name,value)
+
+sample_size = data %>% group_by(name) %>% summarize(num=n())
+
+# Plot
+a=data %>%
+  ggplot( aes(x=name, y=value, fill=name)) +
+  stat_boxplot(geom = "errorbar", width = .33) +
+  geom_violin(width=0.5, fill = "grey95", colour = "Black") +
+  geom_boxplot(width=0.3, fill = "green", color="black", alpha=0.2) +
+  stat_summary(aes(shape = "média"),
+               geom = "point",
+               color="Black",
+               fun = mean,
+               size = 2) +
+  theme_bw() +
+  labs(x = "Dados discretizados", y = "Indice de Desenvolvimento da Educação Básica (Ideb)") +
+  ylim(1.9,6.5)+
+  theme(legend.position = "none")
+```
+
+
+
+&nbsp;
+
+
+
+### FIGURA 24
+
+
+&nbsp;
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width = 11, fig.height = 7}
+a + annotate("text", label = "n = 28", x = 1, y = 2.9, size = 4.5, colour = "Black")+
+annotate("text", label = "M = 5,268", x = 1, y = 2.6, size = 4.5, colour = "Black")+
+annotate("text", label = "DP = 0,470", x = 1, y = 2.3, size = 4.5, colour = "Black")+
+annotate("text", label = "CV = 8,92%", x = 1, y = 2, size = 4.5, colour = "Black")+
+annotate("text", label = "n = 58", x = 2, y = 2.9, size = 4.5, colour = "Black")+
+annotate("text", label = "M = 5,01", x = 2, y = 2.6, size = 4.5, colour = "Black")+
+annotate("text", label = "DP = 0,475", x = 2, y = 2.3, size = 4.5, colour = "Black")+
+annotate("text", label = "CV = 9,49%", x = 2, y = 2, size = 4.5, colour = "Black")+
+annotate("text", label = "n = 54", x = 3, y = 2.9, size = 4.5, colour = "Black")+
+annotate("text", label = "M = 4,606", x = 3, y = 2.6, size = 4.5, colour = "Black")+
+annotate("text", label = "DP = 0,468", x = 3, y = 2.3, size = 4.5, colour = "Black")+
+annotate("text", label = "CV = 10,17%", x = 3, y = 2, size = 4.5, colour = "Black")+
+annotate("text", label = "n = 49", x = 4, y = 2.9, size = 4.5, colour = "Black")+
+annotate("text", label = "M = 4,392", x = 4, y = 2.6, size = 4.5, colour = "Black")+
+annotate("text", label = "DP = 0,432", x = 4, y = 2.3, size = 4.5, colour = "Black")+
+annotate("text", label = "CV = 9,84%", x = 4, y = 2, size = 4.5, colour = "Black")+
+annotate("text", label = "n = 33", x = 5, y = 2.9, size = 4.5, colour = "Black")+
+annotate("text", label = "M = 4,067", x = 5, y = 2.6, size = 4.5, colour = "Black")+
+annotate("text", label = "DP = 0,500", x = 5, y = 2.3, size = 4.5, colour = "Black")+
+annotate("text", label = "CV = 12,29%", x = 5, y = 2, size = 4.5, colour = "Black")
+```
+
+&nbsp;

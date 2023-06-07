@@ -1,0 +1,812 @@
+---
+title: "Relatorio Tese - Capítulo 2"
+author: "Denilson Junio Marques Soares"
+date: '2023-01-30'
+output: html_document
+---
+# Análises da Tese - Capítulo 2
+
+##### Carregamento de Pacotes
+
+```{r pacotes, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(babynames)
+library(ggrepel)
+library(tidyr)
+library(hrbrthemes)
+library(readxl)
+library(ltm)
+library(geobr)
+library(sf)
+library(dplyr)
+library(rio)
+library(readr)
+library(leaflet)
+library(geometry)
+library(RColorBrewer)
+library(GGally)
+library(shadowtext)
+library(VennDiagram)
+library(rmarkdown)
+```
+#
+#
+#
+##### Diretório
+
+```{r, message=FALSE, warning=FALSE, results=FALSE}
+setwd("C:\\Users\\UFES\\Desktop\\Tese_DenilsonSoares\\Capitulo 2") 
+```
+
+
+&nbsp;
+
+
+
+
+### FIGURA 8
+
+
+&nbsp;
+
+
+
+#### Correlação entre nível de aprendizagem no 5° do Ensino Fundamental e desigualdades por NSE, Raça e Gênero
+
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+diag_fun <- function(data, mapping, hist=list(), ...){
+  
+  X = eval_data_col(data, mapping$x)
+  mn = mean(X)
+  s = sd(X)
+  
+  ggplot(data, mapping) + 
+    do.call(function(...) geom_histogram(aes(y =..density..), ...), hist) +
+    stat_function(fun = dnorm, args = list(mean = mn, sd = s), ...)
+}
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+Dados_IDeA <- read_excel("IDeA_dados.xlsx")
+Dados_IDeA_5ano=Dados_IDeA[ , c(1, 2,4,14, 16, 6,8,10,12)]
+names(Dados_IDeA_5ano)[2:9] <- c("Português", "Matemática", "NSE_Port", "NSE_Mat", "Raça_Port", "Raça_Mat", "Sexo_Port", "Sexo_Mat")
+Dados_IDeA_9ano=Dados_IDeA[ , c(1, 18, 20, 30, 32, 22, 24, 26, 28)]
+names(Dados_IDeA_9ano)[2:9] <- c("Português", "Matemática", "NSE_Port", "NSE_Mat", "Raça_Port", "Raça_Mat", "Sexo_Port", "Sexo_Mat")
+```
+
+
+```{r, warning=FALSE, message=FALSE, fig.width = 12, fig.height = 7}
+ggpairs(Dados_IDeA_5ano[,-1],  diag = list(continuous = wrap(diag_fun, hist=list(fill="gray", colour="Blue"), 
+                                                                 colour="Black", lwd=1)),
+        lower = list(continuous = wrap("smooth", color="Blue", se=T)))  +theme_bw()
+```
+
+
+
+
+
+&nbsp;
+
+
+
+
+### FIGURA 9
+
+
+&nbsp;
+
+
+
+#### Correlação entre nível de aprendizagem no 9° do Ensino Fundamental e desigualdades por NSE, Raça e Gênero
+
+
+
+&nbsp;
+
+
+
+
+
+```{r, warning=FALSE, message=FALSE, fig.width = 12, fig.height = 7}
+ggpairs(Dados_IDeA_9ano[,-1],  diag = list(continuous = wrap(diag_fun, hist=list(fill="gray", colour="Blue"), 
+                                                                 colour="Black", lwd=1)),
+        lower = list(continuous = wrap("smooth", color="Blue", se=T)))  +theme_bw()
+
+```
+
+
+
+
+&nbsp;
+
+
+
+
+### FIGURA 10
+
+
+&nbsp;
+
+
+
+#### Análise geoespacial da evolução do nível de aprendizagem, mensurado via IDeA, para o 5° ano do Ensino Fundamental
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE, results=FALSE}
+all_mun_ms <- read_municipality(code_muni=32, year=1991)
+```
+
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+dataset_5ano = left_join(all_mun_ms, Dados_IDeA_5ano, by=c("code_muni"="código_município"))
+
+ggplot() +
+  geom_sf(data=dataset_5ano, aes(fill=Matemática), color= NA, size=.15)+
+  labs(title="Aprendizagem em Matemática - 5° ano",
+       caption='', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(min(dataset_5ano$Matemática), max(dataset_5ano$Matemática)),
+                       name="IDeA")+
+  theme_minimal()
+```
+
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+ggplot() +
+  geom_sf(data=dataset_5ano, aes(fill=Português), color= NA, size=.15)+
+  labs(title="Aprendizagem em Português - 5° ano",
+       caption='', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(min(dataset_5ano$Português), max(dataset_5ano$Português)),
+                       name="IDeA")+
+  theme_minimal()
+```
+
+
+
+
+&nbsp;
+
+
+
+
+### FIGURA 11
+
+
+&nbsp;
+
+
+
+#### Análise geoespacial da evolução do nível de aprendizagem, mensurado via IDeA, para o 9° ano do Ensino Fundamental
+
+
+&nbsp;
+
+
+
+
+
+
+```{r, warning=FALSE, message=FALSE}
+dataset_9ano = left_join(all_mun_ms, Dados_IDeA_9ano, by=c("code_muni"="código_município"))
+
+ggplot() +
+  geom_sf(data=dataset_9ano, aes(fill=Matemática), color= NA, size=.15)+
+  labs(title="Aprendizagem em Matemática - 9° ano",
+       caption='', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(min(dataset_9ano$Matemática), max(dataset_9ano$Matemática)),
+                       name="IDeA")+
+  theme_minimal()
+```
+
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+ggplot() +
+  geom_sf(data=dataset_9ano, aes(fill=Português), color= NA, size=.15)+
+  labs(title="Aprendizagem em Português - 9° ano",
+       caption='', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(min(dataset_9ano$Português), max(dataset_9ano$Português)),
+                       name="IDeA")+
+  theme_minimal()
+```
+
+
+&nbsp;
+
+
+### FIGURA 12
+
+
+&nbsp;
+
+
+
+#### Análise geoespacial da evolução do Ioeb no Espírito Santo
+
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+Dados_Ioeb <- read_excel("Dados_Ioeb.xlsx")
+
+Dados_Ioeb_2015=subset(Dados_Ioeb, ano_IOEB==2015)
+Dados_Ioeb_2017=subset(Dados_Ioeb, ano_IOEB==2017)
+Dados_Ioeb_2019=subset(Dados_Ioeb, ano_IOEB==2019)
+Dados_Ioeb_2021=subset(Dados_Ioeb, ano_IOEB==2021)
+
+dataset_ioeb_2015 = left_join(all_mun_ms, Dados_Ioeb_2015, by=c("code_muni"="co_munic")) 
+dataset_ioeb_2017 = left_join(all_mun_ms, Dados_Ioeb_2017, by=c("code_muni"="co_munic")) 
+dataset_ioeb_2019 = left_join(all_mun_ms, Dados_Ioeb_2019, by=c("code_muni"="co_munic")) 
+dataset_ioeb_2021 = left_join(all_mun_ms, Dados_Ioeb_2021, by=c("code_muni"="co_munic")) 
+
+ggplot() +
+  geom_sf(data=dataset_ioeb_2015, aes(fill=IOEB_AR), color= NA, size=.15)+
+  labs(title="Ioeb 2015",
+       caption='', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(3.7, 5.9),
+                       name="Ioeb")+
+  theme_minimal()
+```
+
+
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+ggplot() +
+  geom_sf(data=dataset_ioeb_2017, aes(fill=IOEB_AR), color= NA, size=.15)+
+  labs(title="Ioeb 2017",
+       caption='', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(3.7, 5.9),
+                       name="Ioeb")+
+  theme_minimal()
+```
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+ggplot() +
+  geom_sf(data=dataset_ioeb_2019, aes(fill=IOEB_AR), color= NA, size=.15)+
+  labs(title="Ioeb 2019",
+       caption='', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(3.7, 5.9),
+                       name="Ioeb")+
+  theme_minimal()
+```
+  
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+  ggplot() +
+  geom_sf(data=dataset_ioeb_2021, aes(fill=IOEB_AR), color= NA, size=.15)+
+  labs(title="Ioeb 2021",
+       caption='', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(3.7, 5.9),
+                       name="Ioeb")+
+  theme_minimal()
+```
+
+
+&nbsp;
+
+
+### FIGURA 13
+
+
+&nbsp;
+
+
+
+#### Evolução dos componentes por edição do Ioeb
+
+
+
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE}
+Dados_Ioeb <- read_excel("Ioeb_oficial_ES.xlsx")
+
+Dados_Ioeb_2015=subset(Dados_Ioeb, ano_IOEB==2015)
+Dados_Ioeb_2017=subset(Dados_Ioeb, ano_IOEB==2017)
+Dados_Ioeb_2019=subset(Dados_Ioeb, ano_IOEB==2019)
+Dados_Ioeb_2021=subset(Dados_Ioeb, ano_IOEB==2021)
+
+data_frame_Insumos <- data.frame(Indicador = c( 
+round(Dados_Ioeb_2015$ioeb_insumos, 2),     
+round(Dados_Ioeb_2017$ioeb_insumos, 2),
+round(Dados_Ioeb_2019$ioeb_insumos, 2),               
+round(Dados_Ioeb_2021$ioeb_insumos, 2), 
+round(Dados_Ioeb_2015$ioeb_results, 2),              
+round(Dados_Ioeb_2017$ioeb_results, 2),               
+round(Dados_Ioeb_2019$ioeb_results, 2),               
+round(Dados_Ioeb_2021$ioeb_results, 2),
+round(Dados_Ioeb_2015$idebanosiniciaisajustado, 2),	 
+round(Dados_Ioeb_2017$idebanosiniciaisajustado, 2),   
+round(Dados_Ioeb_2019$idebanosiniciaisajustado, 2),   
+round(Dados_Ioeb_2021$idebanosiniciaisajustado, 2),
+round(Dados_Ioeb_2015$idebanosfinaisajustado, 2),    
+round(Dados_Ioeb_2017$idebanosfinaisajustado, 2),     
+round(Dados_Ioeb_2019$idebanosfinaisajustado, 2),     
+round(Dados_Ioeb_2021$idebanosfinaisajustado, 2),
+round(Dados_Ioeb_2015$matriclqemajustada, 2),	       
+round(Dados_Ioeb_2017$matriclqemajustada, 2),         
+round(Dados_Ioeb_2019$matriclqemajustada, 2),         
+round(Dados_Ioeb_2021$matriclqemajustada, 2),
+round(Dados_Ioeb_2015$docentesnvelsuperior, 2),      
+round(Dados_Ioeb_2017$docentesnvelsuperior, 2),       
+round(Dados_Ioeb_2019$docentesnvelsuperior, 2),       
+round(Dados_Ioeb_2021$docentesnvelsuperior, 2),
+round(Dados_Ioeb_2015$jornada, 2),	                 
+round(Dados_Ioeb_2017$jornada, 2),                    
+round(Dados_Ioeb_2019$jornada, 2),                    
+round(Dados_Ioeb_2021$jornada, 2),
+round(Dados_Ioeb_2015$expdiretores3, 2),	           
+round(Dados_Ioeb_2017$expdiretores3, 2),              
+round(Dados_Ioeb_2019$expdiretores3, 2),              
+round(Dados_Ioeb_2021$expdiretores3, 2),
+round(Dados_Ioeb_2015$expdiretores6, 2),             
+round(Dados_Ioeb_2017$expdiretores6, 2),              
+round(Dados_Ioeb_2019$expdiretores6, 2),              
+round(Dados_Ioeb_2021$expdiretores6, 2),	
+round(Dados_Ioeb_2015$atendei, 2),                   
+round(Dados_Ioeb_2017$atendei, 2),                    
+round(Dados_Ioeb_2019$atendei, 2),                    
+round(Dados_Ioeb_2021$atendei, 2)),
+Ano = c('2015', '2017','2019','2021',
+        '2015', '2017','2019','2021',
+        '2015', '2017','2019','2021',
+        '2015', '2017','2019','2021',
+        '2015', '2017','2019','2021',
+        '2015', '2017','2019','2021',
+        '2015', '2017','2019','2021',
+        '2015', '2017','2019','2021',
+        '2015', '2017','2019','2021',
+        '2015', '2017','2019','2021'),
+Ind = c('Ioeb_Insumos_ES','Ioeb_Insumos_ES','Ioeb_Insumos_ES','Ioeb_Insumos_ES',
+        'Ioeb_Resultados_ES','Ioeb_Resultados_ES','Ioeb_Resultados_ES','Ioeb_Resultados_ES',
+        'Ideb_AI_ajustado', 'Ideb_AI_ajustado', 'Ideb_AI_ajustado', 'Ideb_AI_ajustado', 
+        'Ideb_AF_ajustado', 'Ideb_AF_ajustado', 'Ideb_AF_ajustado', 'Ideb_AF_ajustado',
+        'Taxa_Matr_ajustado', 'Taxa_Matr_ajustado', 'Taxa_Matr_ajustado', 'Taxa_Matr_ajustado',
+        'Docentes_NS','Docentes_NS','Docentes_NS','Docentes_NS',
+        'Jornada', 'Jornada', 'Jornada', 'Jornada',
+        'Exp_Diretores3','Exp_Diretores3','Exp_Diretores3','Exp_Diretores3',
+        'Exp_Diretores6','Exp_Diretores6','Exp_Diretores6','Exp_Diretores6',
+        'Atendimento_EI','Atendimento_EI','Atendimento_EI','Atendimento_EI'))
+Insumos <- c("Docentes_NS", "Exp_Diretores3", "Exp_Diretores6", 
+             "Jornada", "Atendimento_EI","Ideb_AI_ajustado",
+             "Ideb_AF_ajustado", "Taxa_Matr_ajustado", "Ioeb_Insumos_ES", "Ioeb_Resultados_ES")
+```
+
+
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE, fig.width = 20, fig.height = 12}
+ggplot(data_frame_Insumos, aes(x = factor(Ind,Insumos), y = Indicador, fill = Ano, label= Indicador),)+ 
+  geom_col(position = "dodge", width=.8) +
+  geom_text(position = position_dodge(width = 0.95), vjust = -0.5) +
+  xlab("Variáveis") +
+  ylab("Índices estimados") +
+  theme_ipsum() 
+```
+
+
+
+
+&nbsp;
+
+
+### FIGURA 14
+
+
+&nbsp;
+
+
+
+#### Quantitativo de matrículas no Espírito Santo por quadrantes do Ioeb 2021
+
+
+
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE}
+dados_graf <- read_excel("Ioeb_Categorias_Mun.xlsx")
+    all_mun_ms <- read_municipality(code_muni=32, year=1991)
+    dataset_final = left_join(all_mun_ms, dados_graf, by=c("code_muni"="co_munic"))   
+    BLUE="#076fa2"
+    
+    Critico=subset(dados_graf, dados_graf$Quadrante ==1)
+    Atencao=subset(dados_graf, dados_graf$Quadrante ==2)
+    Desenvolvimento=subset(dados_graf, dados_graf$Quadrante ==3)
+    Otimizado=subset(dados_graf, dados_graf$Quadrante ==4)
+    nd=subset(dados_graf, dados_graf$Quadrante ==0)
+    
+    names <- c("Critico", "Atencao", "Em Desenvolvimento", "Otimizado")
+        data <- data.frame(
+      count = c(306.646, 109.743, 176.809, 196.729), 
+      name = factor(names, levels = names)
+    )
+```
+
+
+
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE}
+ggplot(data) +
+      geom_col(aes(count, name), fill = BLUE, width = 0.6)+
+      xlab("Quantitativo de Matriculas") +
+      ylab("Classificacao") +
+    theme_ipsum() +
+      geom_shadowtext(
+        data = subset(data, count < 8),
+        aes(count, y = name, label = count),
+        hjust = 0,
+        nudge_x = 0.2,
+        colour = BLUE,
+        bg.colour = "white",
+        bg.r = 0.1,
+        family = "Econ Sans Cnd",
+        size = 6
+      ) + 
+      geom_text(
+        data = subset(data, count >= 8),
+        aes(0, y = name, label = count),
+        hjust = 0,
+        nudge_x = 0.2,
+        colour = "white",
+        family = "Econ Sans Cnd",
+        size = 6
+      )
+```
+
+
+
+
+
+&nbsp;
+
+
+### FIGURA 15
+
+
+&nbsp;
+
+
+
+#### Percentual de matrículas no Espírito Santo por quadrantes do Ioeb 2021
+
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+count.data <- data.frame(
+  Classificacao = c("Critico", "Atencao", "Em Desenvolvimento", "Otimizado"),
+  n = c(306.646, 109.743, 176.809, 196.729),
+  prop = c(round(100*306.646/789.927,2), round(100*109.743/789.927,2), round(100*176.809/789.927,2), round(100*196.729/789.927,2))
+)
+
+count.data <- count.data %>%
+  arrange(desc(Classificacao)) %>%
+  mutate(lab.ypos = cumsum(prop) - 0.5*prop)
+
+mycols <- c("#B24745FF", "#DF8F44FF","#00A1D5FF", "#79AF97FF")
+
+ggplot(count.data, aes(x = 2, y = prop, fill = Classificacao)) +
+  geom_bar(stat = "identity", color = "white", size = 1.2) +
+  coord_polar(theta = "y", start = 0)+
+  geom_text(aes(y = lab.ypos, label = prop), color = "white", size = 5)+
+  scale_fill_manual(values = mycols) +
+  labs(fill = "Classificacao (em %)")+
+  theme_void()+
+  xlim(0.5, 2.5)
+```    
+
+
+
+
+&nbsp;
+
+
+### FIGURA 16
+
+
+&nbsp;
+
+
+
+#### Distribuição das escolas participantes do IDE 2019 por etapa de ensino
+
+
+
+&nbsp;
+
+
+
+```{r,results = FALSE, warning=FALSE, message=FALSE, fig.width = 7, fig.height = 3}
+draw.triple.venn(area1 = 210, area2 = 277, area3 = 277, n12 = 135, n23 = 205, n13 = 135, n123 = 76,
+                 category = c("Anos Iniciais EF", "Anos Finais EF", "Ensino Médio"),
+                 col=2:4, cex=2, fill=2:4,lwd=2,scale=T,euler.d=TRUE)
+```
+
+
+
+
+
+&nbsp;
+
+
+### FIGURA 17
+
+
+&nbsp;
+
+
+
+#### Evolução do IDE 2014 - 2019 para as escolas que ofertaram pelo menos uma matrícula no Ensino Médio
+
+
+
+&nbsp;
+
+
+
+```{r, results = FALSE, warning=FALSE, message=FALSE}
+Dados_extra <- read_excel("Dados_extra.xlsx")
+Dados_IDE <- read_excel("Dados_IDE.xlsx")
+dataset_final = left_join(Dados_extra, Dados_IDE, by=c("CO_ENTIDADE"="codigo_escola"))
+dataset_EM= dataset_final[dataset_final$IN_MED == 1,]
+dim(dataset_EM)
+name=c( rep("2014",291), rep("2015",291), rep("2016",291), rep("2017",291), rep('2018', 291), rep('2019', 291))
+value=c(as.numeric(dataset_EM$IDE2014), as.numeric(dataset_EM$IDE2015),
+        as.numeric(dataset_EM$IDE2016), as.numeric(dataset_EM$IDE2017),
+        as.numeric(dataset_EM$IDE2018), as.numeric(dataset_EM$IDE2019))
+data=data.frame(name,value)
+
+sample_size = data %>% group_by(name) %>% summarize(num=n())
+
+# Plot
+a=data %>%
+  ggplot( aes(x=name, y=value, fill=name)) +
+  stat_boxplot(geom = "errorbar", width = .33) +
+  geom_violin(width=0.5, fill = "grey95", colour = "Black") +
+  geom_boxplot(width=0.3, fill = "green", color="black", alpha=0.2) +
+  stat_summary(aes(shape = "média"),
+               geom = "point",
+               color="Black",
+               fun = mean,
+               size = 2) +
+  theme_bw() +
+  labs(x = "Edição do IDE", y = "Indicador de Desenvolvimento das Escolas (IDE)") +
+  ylim(0,85)+
+  theme(legend.position = "none")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width = 12, fig.height = 8}
+a + annotate("text", label = "n = 277", x = 1, y = 17, size = 4.5, colour = "Black")+
+annotate("text", label = "M = 47,1 a", x = 1, y = 13, size = 4.5, colour = "Black")+
+annotate("text", label = "DP = 12,3", x = 1, y = 9, size = 4.5, colour = "Black")+
+annotate("text", label = "CV = 26,1%", x = 1, y = 5, size = 4.5, colour = "Black")+
+annotate("text", label = "n = 277", x = 2, y = 17, size = 4.5, colour = "Black")+
+annotate("text", label = "M = 51,5 bc", x = 2, y = 13, size = 4.5, colour = "Black")+
+annotate("text", label = "DP = 11,1", x = 2, y = 9, size = 4.5, colour = "Black")+
+annotate("text", label = "CV = 21,4%", x = 2, y = 5, size = 4.5, colour = "Black")+
+annotate("text", label = "n = 267", x = 3, y = 17, size = 4.5, colour = "Black")+
+annotate("text", label = "M = 50,8 b", x = 3, y = 13, size = 4.5, colour = "Black")+
+annotate("text", label = "DP = 10,6", x = 3, y = 9, size = 4.5, colour = "Black")+
+annotate("text", label = "CV = 20,6%", x = 3, y = 5, size = 4.5, colour = "Black")+
+annotate("text", label = "n = 276", x = 4, y = 17, size = 4.5, colour = "Black")+
+annotate("text", label = "M = 53,22 c", x = 4, y = 13, size = 4.5, colour = "Black")+
+annotate("text", label = "DP = 10,9", x = 4, y = 9, size = 4.5, colour = "Black")+
+annotate("text", label = "CV = 20,5%", x = 4, y = 5, size = 4.5, colour = "Black")+
+annotate("text", label = "n = 275", x = 5, y = 17, size = 4.5, colour = "Black")+
+annotate("text", label = "M = 55,1 d", x = 5, y = 13, size = 4.5, colour = "Black")+
+annotate("text", label = "DP = 10,1", x = 5, y = 9, size = 4.5, colour = "Black")+
+annotate("text", label = "CV = 18,4%", x = 5, y = 5, size = 4.5, colour = "Black")+
+annotate("text", label = "n = 277", x = 6, y = 17, size = 4.5, colour = "Black")+
+annotate("text", label = "M = 56,9 e", x = 6, y = 13, size = 4.5, colour = "Black")+
+annotate("text", label = "DP = 9,9", x = 6, y = 9, size = 4.5, colour = "Black")+
+annotate("text", label = "CV = 17,3%", x = 6, y = 5, size = 4.5, colour = "Black")+
+annotate("text", label = "Obs.: Médias seguidas pela mesma letra não diferem entre si pelo teste t de Student (p-valor > 0,05)", x = 2.675, y = 1, size = 4.5, colour = "Black")
+```
+
+
+
+
+&nbsp;
+
+
+### FIGURA 18
+
+
+&nbsp;
+
+
+
+#### Gráfico de dispersão entre o IDE e o Ideb alcançado pelas escolas que ofertaram pelo menos uma matrícula no Ensino Médio em 2019
+
+
+
+&nbsp;
+
+
+
+```{r, results = FALSE, warning=FALSE, message=FALSE}
+Dados_IDEB_EM <- read_excel("Ideb_EM.xlsx")
+dados_corr = left_join(dataset_EM, Dados_IDEB_EM, by=c("CO_ENTIDADE"="codigo_EM"))
+
+ggplot(dados_corr, aes(x=as.numeric(IDE2019), y=as.numeric(IDEB2019_EM))) +
+  geom_point() +
+  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE) +
+    labs(x = "Indicador de Desenvolvimento das Escolas (IDE)", y = "Índice de Desenvolvimento da Educação Básica (Ideb)") +
+  theme_ipsum()
+```
+
+
+
+
+&nbsp;
+
+
+### FIGURA 19
+
+
+&nbsp;
+
+
+
+#### Evolução dos municípios do Espírito Santo no IDE entre 2014 e 2019
+
+
+
+&nbsp;
+
+```{r, warning=FALSE, message=FALSE}
+Dados_IDE <- read_excel("Dados_IDE_munic.xlsx")
+all_mun_ms <- read_municipality(code_muni=32, year=1991)
+dataset_final = left_join(all_mun_ms, Dados_IDE, by=c("code_muni"="codigo_escola"))
+```
+
+
+&nbsp;
+
+
+```{r, warning=FALSE, message=FALSE}
+ggplot() +
+  geom_sf(data=dataset_final, aes(fill=IDE2014), color= NA, size=.15)+
+  labs(title="IDE - 2014",
+       caption='Fonte: Elaboração própria', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(20, 85),
+                       name="IDE")+
+  theme_minimal()
+```
+  
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+ggplot() +
+  geom_sf(data=dataset_final, aes(fill=IDE2015), color= NA, size=.15)+
+  labs(title="IDE - 2015",
+       caption='Fonte: Elaboração própria', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(20, 85),
+                       name="IDE")+
+  theme_minimal()
+```
+  
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+ggplot() +
+  geom_sf(data=dataset_final, aes(fill=IDE2016), color= NA, size=.15)+
+  labs(title="IDE - 2016",
+       caption='Fonte: Elaboração própria', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(20, 85),
+                       name="IDE")+
+  theme_minimal()
+```
+  
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+ggplot() +
+  geom_sf(data=dataset_final, aes(fill=IDE2017), color= NA, size=.15)+
+  labs(title="IDE - 2017",
+       caption='Fonte: Elaboração própria', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(20, 85),
+                       name="IDE")+
+  theme_minimal()
+```
+  
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+ggplot() +
+  geom_sf(data=dataset_final, aes(fill=IDE2018), color= NA, size=.15)+
+  labs(title="IDE - 2018",
+       caption='Fonte: Elaboração própria', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(20, 85),
+                       name="IDE")+
+  theme_minimal()
+```
+  
+
+
+&nbsp;
+
+
+
+```{r, warning=FALSE, message=FALSE}
+ggplot() +
+  geom_sf(data=dataset_final, aes(fill=IDE2019), color= NA, size=.15)+
+  labs(title="IDE - 2019",
+       caption='Fonte: Elaboração própria', size=8)+
+  scale_fill_distiller(palette = "RdYlBu", limits=c(20, 85),
+                       name="IDE")+
+  theme_minimal()
+```
+
+
